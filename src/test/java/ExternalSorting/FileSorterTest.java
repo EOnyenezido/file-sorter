@@ -2,6 +2,8 @@ package ExternalSorting;
 
 import org.junit.jupiter.api.Test;
 
+import java.io.*;
+import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -96,5 +98,62 @@ public class FileSorterTest {
             // Assert
             assertTrue(estimate >= 2 * sb.length());
         }
+    }
+
+    @Test
+    public void shouldSortAscAndSaveTempFile() throws IOException {
+        /*
+        * Given an unsorted list of strings
+        * When sortAndSaveTempFile method is called with an ascending comparator
+        * Then should sort the list of string in ascending order and save in a temp file
+        * */
+        // Arrange
+        List<String> unsortedLineChunk = Arrays.asList(sampleData);
+        Comparator<String> ascComparator = (a, b) -> a.toLowerCase().compareTo(b.toLowerCase());
+
+        // Act
+        File file = FileSorter.sortAndSaveTempFile(unsortedLineChunk, ascComparator, null);
+
+        // Assert
+        assertNotNull(file);
+        assertTrue(file.exists());
+        assertTrue(file.length() > 0);
+        List<String> sorted = new ArrayList<>();
+        try (BufferedReader fileReader = new BufferedReader(new FileReader(file))) {
+            String line;
+            while ((line = fileReader.readLine()) != null) {
+                sorted.add(line);
+            }
+        }
+        assertArrayEquals(sorted.toArray(), EXPECTED_SORTED_ASC);
+    }
+
+    @Test
+    public void shouldSortDescAndSaveTempFile() throws IOException {
+        /*
+         * Given an unsorted list of strings
+         * When sortAndSaveTempFile method is called with an descending comparator
+         * Then should sort the list of string in descending order and save in a temp file
+         * */
+        // Arrange
+        List<String> unsortedLineChunk = Arrays.asList(sampleData);
+        Comparator<String> descComparator = (a, b) -> b.toLowerCase().compareTo(a.toLowerCase());
+
+        // Act
+        File file = FileSorter.sortAndSaveTempFile(unsortedLineChunk, descComparator, null);
+
+        // Assert
+        assertNotNull(file);
+        assertTrue(file.exists());
+        assertTrue(file.length() > 0);
+        List<String> sorted = new ArrayList<>();
+        try (BufferedReader fileReader = new BufferedReader(new FileReader(file))) {
+            String line;
+            while ((line = fileReader.readLine()) != null) {
+                sorted.add(line);
+            }
+        }
+
+        assertArrayEquals(sorted.toArray(), EXPECTED_SORTED_DESC);
     }
 }
