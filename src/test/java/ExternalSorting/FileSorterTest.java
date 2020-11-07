@@ -60,7 +60,7 @@ public class FileSorterTest {
 
         // Act
         long tinyBlockSizeEstimate = FileSorter.getEstimatedBlockSize(1000, 1024, freeMemoryEstimate);
-        long okayBlockSizeEstimate = FileSorter.getEstimatedBlockSize(1000000000, 1024, freeMemoryEstimate);
+        long okayBlockSizeEstimate = FileSorter.getEstimatedBlockSize(Long.MAX_VALUE, 1024, freeMemoryEstimate);
 
         // Assert
 
