@@ -50,4 +50,36 @@ public class FileSorter {
         // presumably free memory
         return Runtime.getRuntime().maxMemory() - usedMemory;
     }
+
+    /**
+    * This method estimates a block size which is how much data we can read into memory at a chunk
+    * It also ensures that this block size is not more than the free memory and not
+    * excessively less than free memory such that it becomes inefficient
+    *
+    * @param fileSize The size of the input file to be processed
+    * @param maxTmpFiles The maximum number of temp files to create
+    * @param freeMemory The amount of JVM memory that is free and available for use
+    *
+    * @return The estimated size of a block which we can read into memory safely
+    *
+    * @throws Exception If the estimated block size is above the free memory then the file cannot be processed
+    *                   unless the maxTmpFiles is increased
+    * */
+    public static long getEstimatedBlockSize(long fileSize, int maxTmpFiles, long freeMemory)
+            throws Exception {
+        // We make sure we are not creating more files than maxTmpFiles
+        long blockSize = fileSize / maxTmpFiles + (fileSize % maxTmpFiles == 0 ? 0 : 1);
+
+        // If the block size is greater than free memory, we cannot proceed with the configured
+        // maxTmpFiles. Throw an error
+        if (blockSize > freeMemory) {
+            throw new Exception("Cannot create enough temporary files to fit a sort file. Please check maxTmpFiles");
+        }
+
+        // If the block size if far less than the free memory, we are creating to many
+        // temporary files, so we increase it
+        blockSize = Math.max(blockSize, freeMemory / 2);
+
+        return blockSize;
+    }
 }
