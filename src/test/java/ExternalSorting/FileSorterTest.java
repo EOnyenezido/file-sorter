@@ -258,4 +258,51 @@ public class FileSorterTest {
             assertArrayEquals(tempData.toArray(), EXPECTED_SORTED_ASC);
         }
     }
+
+    @Test
+    public void shouldThrowAnExceptionAndExit_WhenNotGivenRequiredParameters() {
+        // Act and Assert
+        Exception exception = assertThrows(Exception.class, () -> {
+            Properties props = new Properties();
+            FileSorter testFileSorter = new FileSorter(props);
+            testFileSorter.main(new String[]{"--maxtmpfiles", "0"});
+        });
+        String expectedMessage = "The following parameters are required: " +
+                "Input file, Output file, Directory for temp files";
+        String actualMessage = exception.getMessage();
+        assertEquals(actualMessage, expectedMessage);
+    }
+
+    @Test
+    public void shouldSortAndSaveToAnOutputFile_WhenGivenAnUnsortedInputFile() throws Exception {
+        // Arrange
+        File tempInputFile = File.createTempFile("test_input", ".txt", null);
+        tempInputFile.deleteOnExit();
+        File tempOutputFile = File.createTempFile("test_input", ".txt", null);
+        tempOutputFile.deleteOnExit();
+        OutputStream out = new FileOutputStream(tempInputFile);
+        BufferedWriter fileWriter = new BufferedWriter(new OutputStreamWriter(out));
+        fileWriter.write(String.join(" ", sampleData));
+        fileWriter.close();
+
+        // Act
+        FileSorter testFileSorter = new FileSorter(null); // using command line props
+        testFileSorter.main(new String[]{"--maxtmpfiles", "1024", "--inputfile", tempInputFile.toString(),
+            "--outputfile", tempOutputFile.toString(), "--tmpfilesdirectory", ".",
+            "--order", "asc", "--wordwrap", "100"});
+
+        // Assert
+        assertNotNull(tempOutputFile);
+        assertTrue(tempOutputFile.exists());
+        assertTrue(tempOutputFile.length() > 0);
+        List<String> sorted = new ArrayList<>();
+        try (BufferedReader fileReader = new BufferedReader(new FileReader(tempOutputFile))) {
+            String line;
+            while ((line = fileReader.readLine()) != null) {
+                sorted.add(line);
+            }
+        }
+
+        assertTrue(sorted.get(0).contains(String.join(" ", EXPECTED_SORTED_ASC)));
+    }
 }
