@@ -1,6 +1,7 @@
 package ExternalSorting;
 
 import java.io.*;
+import java.text.SimpleDateFormat;
 import java.util.*;
 
 /**
@@ -180,5 +181,50 @@ public class FileSorter {
                 sc.close();
             }
         }
+    }
+
+    /**
+    * This method essentially takes a large file and scans a set block into memory
+    * This block is then sorted and saved to a temp file. The list of temp files are
+    * returned so they can be merged into a new output file
+    *
+    * @param fileSize Size of the input file, used to estimate block size
+    * @param maxTmpFiles Maximum number of temporary files to create, used to estimate block size
+    * @param freeMemory Estimated free memory, used to estimate block size
+    * @param fileScanner Scanner for the input file to be sorted
+    * @param comparator Comparator used to sort the words, ascending or descending order
+    * @param tmpDirectory Directory to place the temp files, files will be deleted after
+    *
+    * @return The list of the sorted temp files
+    *
+    * @throws Exception If unable to read from the input file or save a temp file
+    * */
+    public static List<File> createSortedTempFiles(long fileSize, int maxTmpFiles, long freeMemory,
+        Scanner fileScanner, Comparator<String> comparator, File tmpDirectory) throws Exception {
+        List<File> files = new ArrayList<>();
+        long maxBlockSize = getEstimatedBlockSize(fileSize, maxTmpFiles, freeMemory);
+        Set<String> distinctWords = new HashSet<>();
+
+        try {
+            while (fileScanner.hasNext()) {
+                long currBlockSize = 0;
+                // read lines from the file until we hit the max block size
+                while (currBlockSize < maxBlockSize && fileScanner.hasNext()) {
+                    String word = fileScanner.next();
+                    distinctWords.add(word);
+                    currBlockSize += getEstimatedStringSize(word);
+                }
+                File currFile = sortAndSaveTempFile(new ArrayList<>(distinctWords), comparator, tmpDirectory);
+                files.add(currFile);
+                distinctWords.clear();
+                System.out.println(new SimpleDateFormat("yyyy/MM/dd HH:mm:ss.sss").format(new Date())
+                        + ": Temp file : " + currFile.toString() + " created successfully.");
+            }
+        } finally {
+            // close the file scanner
+            fileScanner.close();
+        }
+
+        return files;
     }
 }
