@@ -224,4 +224,38 @@ public class FileSorterTest {
         // word wrap
         assertTrue(merged.get(0).split(" ").length <= 1);
     }
+
+    @Test
+    public void shouldCreateSortedTempFiles_WhenGivenUnsortedLargeFile() throws Exception {
+        // Arrange
+        long freeMemory = FileSorter.getEstimatedFreeMemory();
+        Comparator<String> ascComparator = (a, b) -> a.toLowerCase().compareTo(b.toLowerCase());
+        File tempInputFile = File.createTempFile("test_input", ".txt", null);
+        tempInputFile.deleteOnExit();
+        OutputStream out = new FileOutputStream(tempInputFile);
+        BufferedWriter fileWriter = new BufferedWriter(new OutputStreamWriter(out));
+        fileWriter.write(String.join(" ", sampleData));
+        fileWriter.close();
+        Scanner fileScanner = new Scanner(tempInputFile);
+
+        // Act
+        List<File> sortedTempFiles = FileSorter.createSortedTempFiles(tempInputFile.length(), 1025,
+                freeMemory, fileScanner, ascComparator, null);
+
+        // Assert
+        for (File file : sortedTempFiles) {
+            assertNotNull(file);
+            assertTrue(file.exists());
+            assertTrue(file.length() > 0);
+            List<String> tempData = new ArrayList<>();
+            try (BufferedReader fileReader = new BufferedReader(new FileReader(file))) {
+                String line;
+                while ((line = fileReader.readLine()) != null) {
+                    tempData.add(line);
+                }
+            }
+
+            assertArrayEquals(tempData.toArray(), EXPECTED_SORTED_ASC);
+        }
+    }
 }
