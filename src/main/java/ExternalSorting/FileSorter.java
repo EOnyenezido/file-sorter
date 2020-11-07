@@ -304,7 +304,7 @@ public class FileSorter {
         if (inputFile == null || outputFile == null) {
             String message = "The following parameters are required: "
                     + (inputFile == null ? "Input file, " : "")
-                    + (outputFile == null ? "Output file, " : "");
+                    + (outputFile == null ? "Output file" : "");
             System.err.println(new SimpleDateFormat("yyyy/MM/dd HH:mm:ss.sss").format(new Date())
                     + ": " + message);
             throw new Exception(message);

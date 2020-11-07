@@ -268,7 +268,7 @@ public class FileSorterTest {
             testFileSorter.main(new String[]{"--maxtmpfiles", "0"});
         });
         String expectedMessage = "The following parameters are required: " +
-                "Input file, Output file, Directory for temp files";
+                "Input file, Output file";
         String actualMessage = exception.getMessage();
         assertEquals(actualMessage, expectedMessage);
     }
