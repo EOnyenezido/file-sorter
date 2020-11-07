@@ -156,4 +156,72 @@ public class FileSorterTest {
 
         assertArrayEquals(sorted.toArray(), EXPECTED_SORTED_DESC);
     }
+
+    @Test
+    public void shouldMergeSortedTempFiles() throws IOException {
+        // Arrange
+        List<String> unsortedLineChunk1 = Arrays.asList(sampleData);
+        List<String> unsortedLineChunk2 = Arrays.asList(sampleMergeData);
+        Comparator<String> ascComparator = (a, b) -> a.toLowerCase().compareTo(b.toLowerCase());
+        File tempFile1 = FileSorter.sortAndSaveTempFile(unsortedLineChunk1, ascComparator, null);
+        File tempFile2 = FileSorter.sortAndSaveTempFile(unsortedLineChunk2, ascComparator, null);
+        List<File> tempFileList = new ArrayList<>();
+        tempFileList.add(tempFile1);
+        tempFileList.add(tempFile2);
+        File tempOutputFile = File.createTempFile("test_output", ".txt", null);
+        tempOutputFile.deleteOnExit();
+        BufferedWriter fileWriter = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(tempOutputFile)));
+
+        // Act
+        FileSorter.mergeSortedTempFiles(ascComparator, tempFileList, fileWriter, 100);
+
+        // Assert
+        assertNotNull(tempOutputFile);
+        assertTrue(tempOutputFile.exists());
+        assertTrue(tempOutputFile.length() > 0);
+        List<String> merged = new ArrayList<>();
+        try (BufferedReader fileReader = new BufferedReader(new FileReader(tempOutputFile))) {
+            String line;
+            while ((line = fileReader.readLine()) != null) {
+                merged.add(line);
+            }
+        }
+
+        assertArrayEquals(merged.toArray(), EXPECTED_MERGED);
+        // word wrap
+        assertTrue(merged.get(0).split(" ").length <= 100);
+    }
+
+    @Test
+    public void shouldMergeSortedTempFilesAndWrapLine() throws IOException {
+        // Arrange
+        List<String> unsortedLineChunk1 = Arrays.asList(sampleData);
+        List<String> unsortedLineChunk2 = Arrays.asList(sampleMergeData);
+        Comparator<String> ascComparator = (a, b) -> a.toLowerCase().compareTo(b.toLowerCase());
+        File tempFile1 = FileSorter.sortAndSaveTempFile(unsortedLineChunk1, ascComparator, null);
+        File tempFile2 = FileSorter.sortAndSaveTempFile(unsortedLineChunk2, ascComparator, null);
+        List<File> tempFileList = new ArrayList<>();
+        tempFileList.add(tempFile1);
+        tempFileList.add(tempFile2);
+        File tempOutputFile = File.createTempFile("test_output", ".txt", null);
+        tempOutputFile.deleteOnExit();
+        BufferedWriter fileWriter = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(tempOutputFile)));
+
+        // Act
+        FileSorter.mergeSortedTempFiles(ascComparator, tempFileList, fileWriter, -1);
+
+        // Assert
+        assertNotNull(tempOutputFile);
+        assertTrue(tempOutputFile.exists());
+        assertTrue(tempOutputFile.length() > 0);
+        List<String> merged = new ArrayList<>();
+        try (BufferedReader fileReader = new BufferedReader(new FileReader(tempOutputFile))) {
+            String line;
+            while ((line = fileReader.readLine()) != null) {
+                merged.add(line);
+            }
+        }
+        // word wrap
+        assertTrue(merged.get(0).split(" ").length <= 1);
+    }
 }
