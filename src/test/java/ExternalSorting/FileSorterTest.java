@@ -2,7 +2,7 @@ package ExternalSorting;
 
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class FileSorterTest {
 
@@ -42,5 +42,36 @@ public class FileSorterTest {
         // Estimate margin is within 2kb
         // It should be exact but leaving a 2kb approximation margin for java runtime.getruntime().freememory()
         assertTrue(estimate - (maxMemory - usedMemory) <= 2000);
+    }
+
+    @Test
+    public void shouldCorrectlyEstimateBlockSize() throws Exception {
+        /*
+         * When an estimate is made for the preferred block size
+         * Then it should not be too small
+         *  and it should throw an exception if it is bigger than the available free memory
+         * */
+        // Arrange
+        long freeMemoryEstimate = FileSorter.getEstimatedFreeMemory();
+
+        // Act
+        long tinyBlockSizeEstimate = FileSorter.getEstimatedBlockSize(1000, 1024, freeMemoryEstimate);
+        long okayBlockSizeEstimate = FileSorter.getEstimatedBlockSize(1000000000, 1024, freeMemoryEstimate);
+
+        // Assert
+
+        // when the block size is too small it should be optimized to half of the free memory
+        assertEquals(tinyBlockSizeEstimate, freeMemoryEstimate / 2);
+
+        // when the block size is okay, it should still be less than the free memory
+        assertTrue(okayBlockSizeEstimate < freeMemoryEstimate);
+
+        // when the block size is more than the available free memory, it should throw an exception
+        Exception exception = assertThrows(Exception.class, () -> {
+            long excessBlockSizeEstimate = FileSorter.getEstimatedBlockSize(1000000000, 1, freeMemoryEstimate);
+        });
+        String expectedMessage = "Cannot create enough temporary files to fit a sort file. Please check maxTmpFiles";
+        String actualMessage = exception.getMessage();
+        assertEquals(actualMessage, expectedMessage);
     }
 }
