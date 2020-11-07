@@ -227,4 +227,108 @@ public class FileSorter {
 
         return files;
     }
+
+    public static void main(String[] args) throws Exception {
+        // Internal default values
+        long startTime = System.currentTimeMillis();
+        int maxTempFiles = 1024, wordWrap = 100;
+        File inputFile, outputFile;
+        File tmpFilesDirectory = new File(".");
+        String order = "asc";
+
+        // TODO - Replace with logger
+        System.out.println(new SimpleDateFormat("yyyy/MM/dd HH:mm:ss.sss").format(new Date())
+                + ": Loading Configuration from File.");
+
+        // Try to load configuration file, default to internal values if not found
+        try {
+            File configFile = new File("config.properties");
+            FileReader reader = new FileReader(configFile);
+            if (props == null) {
+                props = new Properties();
+                props.load(reader);
+            }
+            reader.close();
+        } catch (FileNotFoundException ex) {
+            // file does not exist continue with defaults
+            props = props == null ? new Properties() : props;
+            System.out.println(new SimpleDateFormat("yyyy/MM/dd HH:mm:ss.sss").format(new Date())
+                    + ": Configuration file not found. Using command line variables or internal defaults.");
+        } catch (IOException ex) {
+            // I/O error continue with defaults
+            props = props == null ? new Properties() : props;
+            System.err.println(new SimpleDateFormat("yyyy/MM/dd HH:mm:ss.sss").format(new Date())
+                    + ": Unable to load configuration file: " + ex.getMessage()
+                    + ". Using command line variables or internal defaults");
+        }
+
+        /*
+        * Load configuration from config file or command line arguments
+        * Order of precedence is command line > config file > internal defaults
+        * */
+        // config file
+        maxTempFiles = props.getProperty("maxTempFiles") != null ? Integer.parseInt(props.getProperty("maxTempFiles"))
+            : maxTempFiles;
+        inputFile = props.getProperty("inputFile") != null ? new File(props.getProperty("inputFile"))
+            : null;
+        outputFile = props.getProperty("outputFile") != null ? new File(props.getProperty("outputFile"))
+            : null;
+        tmpFilesDirectory = props.getProperty("tmpFilesDirectory") != null ? new File(props.getProperty("tmpFilesDirectory"))
+            : tmpFilesDirectory;
+        order = props.getProperty("order") != null ? props.getProperty("order") : order;
+        wordWrap = props.getProperty("wordWrap") != null ? Integer.parseInt(props.getProperty("wordWrap")) : wordWrap;
+        // command line
+        for (int param = 0; param < args.length; param++) {
+            if (args[param].equals("--maxtmpfiles") && args.length > param + 1) {
+                int val = Integer.parseInt(args[++param]);
+                if (val < 1) { // make sure it is valid
+                    System.err.println("Invalid max temp file value: " + val
+                            + ". Continuing with internal default: " + maxTempFiles);
+                } else {
+                    maxTempFiles = val;
+                }
+            } else if (args[param].equals("--tmpfilesdirectory") && args.length > param + 1) {
+                tmpFilesDirectory = new File(args[++param]);
+            } else if (args[param].equals("--inputfile") && args.length > param + 1) {
+                inputFile = new File(args[++param]);
+            } else if (args[param].equals("--outputfile") && args.length > param + 1) {
+                outputFile = new File(args[++param]);
+            } else if (args[param].equals("--order") && args.length > param + 1) {
+                order = args[++param];
+            } else if (args[param].equals("--wordwrap") && args.length > param + 1) {
+                wordWrap = Integer.parseInt(args[++param]);
+            }
+        }
+
+        // Make sure none of the required values are null
+        if (inputFile == null || outputFile == null) {
+            String message = "The following parameters are required: "
+                    + (inputFile == null ? "Input file, " : "")
+                    + (outputFile == null ? "Output file, " : "");
+            System.err.println(new SimpleDateFormat("yyyy/MM/dd HH:mm:ss.sss").format(new Date())
+                    + ": " + message);
+            throw new Exception(message);
+        }
+
+        // Sort ascending order or descending order
+        Comparator<String> comparator = order.equals("desc") ? (a, b) -> b.toLowerCase().compareTo(a.toLowerCase())
+                : (a, b) -> a.toLowerCase().compareTo(b.toLowerCase());
+
+        // Split the input file into sorted temp files
+        System.out.println(new SimpleDateFormat("yyyy/MM/dd HH:mm:ss.sss").format(new Date())
+                + ": Begin splitting large file into temporary sorted smaller files.");
+        Scanner fileScanner = new Scanner(inputFile);
+        List<File> sortedTempFiles = createSortedTempFiles(inputFile.length(), maxTempFiles,
+                getEstimatedFreeMemory(), fileScanner, comparator, tmpFilesDirectory);
+
+        // Merge the sorted temp files
+        System.out.println(new SimpleDateFormat("yyyy/MM/dd HH:mm:ss.sss").format(new Date())
+                + ": Begin merging temporary sorted files to sorted output file - " + outputFile.toString());
+        BufferedWriter fileWriter = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(outputFile, true)));
+        mergeSortedTempFiles(comparator, sortedTempFiles, fileWriter, wordWrap);
+        System.out.println(new SimpleDateFormat("yyyy/MM/dd HH:mm:ss.sss").format(new Date())
+                + ": Sorted output file created successfully.");
+        System.out.println(new SimpleDateFormat("yyyy/MM/dd HH:mm:ss.sss").format(new Date())
+                + ": Total processing time(ms) - " + (System.currentTimeMillis() - startTime));
+    }
 }
