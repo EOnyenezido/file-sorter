@@ -1,9 +1,7 @@
 package ExternalSorting;
 
 import java.io.*;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Properties;
+import java.util.*;
 
 /**
  * Sorts a large input file by splitting it into sorted temp files and merging them into a sorted output file.
@@ -127,5 +125,60 @@ public class FileSorter {
         }
         fileWriter.close();
         return newTempFile;
+    }
+
+    /**
+    * This uses a min/max heap and the merge k sorted lists algorithm to merge the sorted temp files.
+    *
+    * Why use java.util.Scanner here instead of java.io.BufferedFileReader? The scanner uses
+    * a smaller buffer than the buffered reader and since the files are sorted word for word, it is
+    * more memory efficient to read a single word than to read a line chunk and split it into words
+    *
+    * @param comparator Comparator for merging the words in the sorted temp files
+    * @param tmpFiles A list of the sorted temp files to be merged into output file
+    * @param fileWriter A simple buffered file writer for writing the output file
+    * @param wordWrap Number of words before wrapping to a new line
+    *
+    * @throws IOException General IOException if unable to access any file(s)
+    * */
+    public static void mergeSortedTempFiles(Comparator<String> comparator, List<File> tmpFiles,
+        BufferedWriter fileWriter, int wordWrap) throws IOException {
+        // Min/Max heap depending on the comparator passed
+        PriorityQueue<CachedScanner> queue = new PriorityQueue<>((o1, o2) -> comparator.compare(o1.peek(), o2.peek()));
+        // Add all the temp file scanners to the heap
+        for (File file : tmpFiles) {
+            Scanner s = new Scanner(file);
+            CachedScanner sc = new CachedScanner(s);
+            if (!sc.isEmpty()) {
+                queue.add(sc);
+            }
+        }
+        // Go through heap and write the sorted words to output file
+        // Wrapped in a try-finally block so if an exception occurs the file writer
+        // and file scanners will always be closed
+        try {
+            int counter = 0;
+            while (!queue.isEmpty()) {
+                CachedScanner currScanner = queue.poll();
+                String word = currScanner.pop();
+                fileWriter.write(word);
+                fileWriter.write(" ");
+                if (++counter >= wordWrap) { // wrap line after wordWrap words per line
+                    fileWriter.newLine();
+                    counter = 0;
+                }
+                if (currScanner.isEmpty()) {
+                    currScanner.close();
+                } else {
+                    queue.add(currScanner);
+                }
+            }
+        } finally {
+            fileWriter.close();
+            // Just in case an exception occurs before the priority queue is empty, to avoid any memory leaks
+            for (CachedScanner sc : queue) {
+                sc.close();
+            }
+        }
     }
 }
