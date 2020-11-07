@@ -60,7 +60,7 @@ public class FileSorterTest {
 
         // Act
         long tinyBlockSizeEstimate = FileSorter.getEstimatedBlockSize(1000, 1024, freeMemoryEstimate);
-        long okayBlockSizeEstimate = FileSorter.getEstimatedBlockSize(Long.MAX_VALUE, 1024, freeMemoryEstimate);
+        long okayBlockSizeEstimate = FileSorter.getEstimatedBlockSize(1000000000, 1024, freeMemoryEstimate);
 
         // Assert
 
@@ -72,7 +72,7 @@ public class FileSorterTest {
 
         // when the block size is more than the available free memory, it should throw an exception
         Exception exception = assertThrows(Exception.class, () -> {
-            long excessBlockSizeEstimate = FileSorter.getEstimatedBlockSize(1000000000, 1, freeMemoryEstimate);
+            long excessBlockSizeEstimate = FileSorter.getEstimatedBlockSize(Long.MAX_VALUE, 1, freeMemoryEstimate);
         });
         String expectedMessage = "Cannot create enough temporary files to fit a sort file. Please check maxTmpFiles";
         String actualMessage = exception.getMessage();
