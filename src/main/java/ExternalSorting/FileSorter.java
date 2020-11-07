@@ -32,4 +32,22 @@ public class FileSorter {
         int INT_FIELDS = 12;
         OBJ_OVERHEAD = OBJ_HEADER + INT_FIELDS + OBJ_REF + ARR_HEADER;
     }
+
+    /**
+    * This method essentially attempts to estimate the available free memory.
+    * It first calls the gc to clear up unused objects and then estimates the
+    * free memory is the configured max memory -Xmx/mx minus the used memory
+    *
+    * @return The estimated free memory
+    * */
+    public static long getEstimatedFreeMemory() {
+        System.gc(); // Call the garbage collector to free up memory first
+
+        Runtime currentRunTime = Runtime.getRuntime();
+        // Used memory is the currently allocated memory minus the free memory
+        long usedMemory = currentRunTime.totalMemory() - currentRunTime.freeMemory();
+
+        // presumably free memory
+        return Runtime.getRuntime().maxMemory() - usedMemory;
+    }
 }
