@@ -82,4 +82,17 @@ public class FileSorter {
 
         return blockSize;
     }
+
+    /**
+    * This method essentially estimates a string size in bytes
+    * It estimates 2 bytes per character plus an object overheard
+    * based on the JVM bit size
+    *
+    * @param str String for which to estimate size
+    *
+    * @return The estimated string size
+    * */
+    public static long getEstimatedStringSize(String str) {
+        return (str.length() * 2) + OBJ_OVERHEAD;
+    }
 }
