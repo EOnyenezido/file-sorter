@@ -2,6 +2,8 @@ package ExternalSorting;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.concurrent.ThreadLocalRandom;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 public class FileSorterTest {
@@ -73,5 +75,26 @@ public class FileSorterTest {
         String expectedMessage = "Cannot create enough temporary files to fit a sort file. Please check maxTmpFiles";
         String actualMessage = exception.getMessage();
         assertEquals(actualMessage, expectedMessage);
+    }
+
+    @Test
+    public void shouldCorrectlyEstimateStringSize() {
+        /*
+         * Given a string
+         * When an size estimate is made
+         * Then should be at least twice it's length
+         */
+        for (int i = 0; i < 100; i++) {
+            // Arrange
+            StringBuilder sb = new StringBuilder();
+            // Generate random string
+            while (sb.length() < i) sb.append((char) ThreadLocalRandom.current().nextInt(97, 122 + 1));
+
+            // Act
+            long estimate = FileSorter.getEstimatedStringSize(sb.toString());
+
+            // Assert
+            assertTrue(estimate >= 2 * sb.length());
+        }
     }
 }
